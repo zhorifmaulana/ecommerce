@@ -5,23 +5,38 @@ import HomePage from './Pages/Homepage/homepage.component';
 import ShopPage from './Components/Shop/shop.component';
 import Header from './Components/header/header.component';
 import SignInAndSignUpPage from './Pages/sign-in-and-sign-up/sign-in-and-sign-up.component';
-import {auth} from './Components/firebase/firebase.utils';
+import {auth, createUserProfileDocument} from './Components/firebase/firebase.utils';
 
-class App extends React.Component  {
+class App extends React.Component {
   constructor() {
     super();
 
     this.state = {
-      currentUser : null
-    }
+      currentUser: null
+    };
   }
-  
-  unsubscribeFromAuth = null
+
+  unsubscribeFromAuth = null;
 
   componentDidMount() {
-   this.unsubscribeFromAuth = auth.onAuthStateChanged(user => {
-     this.setState({currentUser : user});
-   }) 
+    this.unsubscribeFromAuth = auth.onAuthStateChanged(async userAuth => {
+      if (userAuth) {
+        const userRef = await createUserProfileDocument(userAuth);
+
+        userRef.onSnapshot(snapShot => {
+          this.setState({
+            currentUser: {
+              id: snapShot.id,
+              ...snapShot.data()
+            }
+          });
+
+          console.log(this.state);
+        });
+      }
+
+      this.setState({ currentUser: userAuth });
+    });
   }
 
   componentWillUnmount() {
@@ -31,16 +46,15 @@ class App extends React.Component  {
   render() {
     return (
       <div>
-        <Header currentUser = {this.state.currentUser}/>
+        <Header currentUser={this.state.currentUser} />
         <Switch>
-          <Route exact path ='/' component = {HomePage} />
-          <Route exact path ='/shop' component = {ShopPage} />
-          <Route exact path ='/signin' component = {SignInAndSignUpPage} />
+          <Route exact path='/' component={HomePage} />
+          <Route path='/shop' component={ShopPage} />
+          <Route path='/signin' component={SignInAndSignUpPage} />
         </Switch>
       </div>
     );
   }
-    
 }
 
 export default App;
